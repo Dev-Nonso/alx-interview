@@ -18,7 +18,6 @@ def output(log: dict) -> None:
 
 
 if __name__ == "__main__":
-    # Updated regex pattern for better accuracy
     regex = re.compile(
         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+\] "GET /projects/260 HTTP/1.1" (\d{3}) (\d+)'
     )
@@ -38,23 +37,19 @@ if __name__ == "__main__":
             match = regex.fullmatch(line)
             if match:
                 line_count += 1
-                code = match.group(1)  # Group 1: status code
-                file_size = int(match.group(2))  # Group 2: file size
+                code = match.group(1)
+                file_size = int(match.group(2))
 
-                # Add the file size
                 log["file_size"] += file_size
 
-                # Count the status code occurrence
+                
                 if code in log["code_frequency"]:
                     log["code_frequency"][code] += 1
 
-                # Print stats every 10 lines
                 if line_count % 10 == 0:
                     output(log)
     except KeyboardInterrupt:
-        # Handle Ctrl + C gracefully
         output(log)
         raise
     finally:
-        # Always print final stats
         output(log)
