@@ -1,56 +1,55 @@
 #!/usr/bin/python3
-"""
-log parsing
-
-"""
-
 import sys
-import re
+import signal
 
 
-def initialize_log():
-    status_code = [200, 301, 400, 401, 403, 404, 405, 500]
-    log = {"file_size": 0, "code_list": {str(code): 0 for code in status_code}}
-    return log
+total_size = 0
+status_codes_count = {
+    "200": 0, "301": 0, "400": 0, "401": 0,
+    "403": 0, "404": 0, "405": 0, "500": 0
+}
+line_count = 0
+
+def print_stats():
+    """Prints the accumulated statistics."""
+    print(f"File size: {total_size}")
+    for code in sorted(status_codes_count.keys()):
+        if status_codes_count[code] > 0:
+            print(f"{code}: {status_codes_count[code]}")
+
+def process_line(line):
+    """Processes a line and updates counters if the line format is correct."""
+    global total_size, line_count
+    parts = line.split()
+
+    if len(parts) < 7:
+        return
+
+    status_code = parts[-2]
+    try:
+        file_size = int(parts[-1])
+        total_size += file_size
+    except ValueError:
+        return
+
+    
+    if status_code in status_codes_count:
+        status_codes_count[status_code] += 1
 
 
-def parse_line(line, regex, log):
-    match = regex.fullmatch(line)
-    if match:
-        status_code, file_size = match.groups()  
-        log["file_size"] += int(file_size) 
-        if status_code.isdecimal():
-            log["code_list"][status_code] += 1
-    return log
+def signal_handler(sig, frame):
+    print_stats()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
-def print_codes(log):
-    print("file size: {}".format(log["file_size"]))
-    sorted_code_list = sorted(log["code_list"])
-    for code in sorted_code_list:
-        if log["code_list"][code]:
-            print(f"{code}: {log['code_list'][code]}")
-
-
-
-
-def main():
-    regex = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d+\] "GET /projects/260 HTTP/1.1" (\d{3}) (\d+)')
-
-    log = initialize_log()
-
-    line_count = 0
-
+try:
     for line in sys.stdin:
-        line = line.strip()
+        process_line(line.strip())
         line_count += 1
-        log = parse_line(line, regex, log)
         if line_count % 10 == 0:
-            print_codes(log)
-
-    print_codes(log)
-
-
-if __name__ == "__main__":
-    main()
-
+            print_stats()
+except KeyboardInterrupt:
+    print_stats()
+    sys.exit(0)
