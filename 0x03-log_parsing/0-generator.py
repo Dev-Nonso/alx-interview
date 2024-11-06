@@ -4,6 +4,11 @@ import sys
 from time import sleep
 import datetime
 
+try:
+    sys.stdout.flush()
+except BrokenPipeError:
+    sys.exit(0)
+    
 for i in range(10000):
     sleep(random.random())
     sys.stdout.write("{:d}.{:d}.{:d}.{:d} - [{}] \"GET /projects/260 HTTP/1.1\" {} {}\n".format(
